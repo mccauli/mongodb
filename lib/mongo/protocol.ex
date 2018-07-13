@@ -17,6 +17,11 @@ defmodule Mongo.Protocol do
     mod.close(sock)
   end
 
+  def disconnect(op, reason) do  ### ADDED BY JFC - hack (still needed?)
+    IO.puts("DISCONNECTING: #{inspect op} - #{inspect reason}")
+    :ok
+  end
+
   defp notify_disconnect(%{connection_type: type, topology_pid: pid, host: host}) do
     GenServer.cast(pid, {:disconnect, type, host})
   end
@@ -151,6 +156,11 @@ defmodule Mongo.Protocol do
 
   def handle_info({:ssl_closed, _}, s) do
     err = Mongo.Error.exception(tag: :ssl, action: "async recv", reason: :closed)
+    {:disconnect, err, s}
+  end
+  
+  def handle_info({:DOWN, _, _, _,_}, s) do # Added by JFC
+    err = Mongo.Error.exception(tag: :tcp, action: "async recv", reason: :down)
     {:disconnect, err, s}
   end
 
